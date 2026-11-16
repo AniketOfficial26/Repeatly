@@ -1,0 +1,6 @@
+{
+  "name": "LumenDo",
+  "description": "A tactile, gesture-driven mobile todo and persistent reminder app with custom tabs, recurring tasks, and adaptive dark/light themes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

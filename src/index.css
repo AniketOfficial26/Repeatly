@@ -1,0 +1,99 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+    /* Warm Stone / Soft Sage-Oat Light Theme (avoids stark excessive white) */
+    --bg-canvas: #E6E7DC;
+    --bg-surface: #F0F1E7;
+    --bg-surface-elevated: #F5F6EE;
+    --bg-surface-muted: #DCDED0;
+    --border-hairline: rgba(26, 28, 20, 0.10);
+    --text-primary: #191B13;
+    --text-secondary: #5B5E50;
+    --text-muted: #7C7F70;
+    --ambient-glow: rgba(186, 209, 44, 0.22);
+    --ambient-glow-secondary: rgba(162, 150, 118, 0.18);
+
+    /* Accent defaults (Electric Acid Lime inspired by reference) */
+    --accent: #C7DE2C;
+    --accent-bright: #DDF247;
+    --accent-fg: #15170E;
+    --accent-card: #E4F28A;
+    --accent-card-fg: #16180F;
+    --accent-soft: rgba(199, 222, 44, 0.20);
+  }
+
+  .dark {
+    /* Deep Warm Espresso / Smoky Charcoal Dark Theme (inspired by reference image) */
+    --bg-canvas: #12100E;
+    --bg-surface: #1D1A16;
+    --bg-surface-elevated: #26221D;
+    --bg-surface-muted: #2F2A24;
+    --border-hairline: rgba(255, 248, 235, 0.09);
+    --text-primary: #F4F2EC;
+    --text-secondary: #B2ADA2;
+    --text-muted: #7D786E;
+    --ambient-glow: rgba(221, 242, 71, 0.10);
+    --ambient-glow-secondary: rgba(138, 92, 54, 0.18);
+
+    --accent: #DDF247;
+    --accent-bright: #E6F865;
+    --accent-fg: #14120F;
+    --accent-card: #E5F586;
+    --accent-card-fg: #14120F;
+    --accent-soft: rgba(221, 242, 71, 0.16);
+  }
+
+  html {
+    font-family: var(--font-sans);
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background-color: var(--bg-canvas);
+    color: var(--text-primary);
+    transition: background-color 300ms cubic-bezier(0.16, 1, 0.3, 1),
+                color 300ms cubic-bezier(0.16, 1, 0.3, 1);
+    overflow-x: hidden;
+  }
+}
+
+.font-mono-tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.theme-transition {
+  transition: background-color 300ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 300ms cubic-bezier(0.16, 1, 0.3, 1),
+              color 300ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Hide scrollbars cleanly on horizontal tab/day strips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
