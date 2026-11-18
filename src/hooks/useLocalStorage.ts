@@ -1,7 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
 
-export function useLocalStorage<T>(key: string, initialValue: T | (() => T)) {
+interface LocalStorageOptions {
+  persist?: boolean;
+}
+
+export function useLocalStorage<T>(
+  key: string,
+  initialValue: T | (() => T),
+  options: LocalStorageOptions = {}
+) {
+  const persist = options.persist !== false;
   const [storedValue, setStoredValue] = useState<T>(() => {
+    if (!persist) {
+      try {
+        const item = window.localStorage.getItem(key);
+        if (item !== null) return JSON.parse(item) as T;
+      } catch {
+        // Fallback to initial value
+      }
+      return typeof initialValue === 'function' ? (initialValue as () => T)() : initialValue;
+    }
     try {
       const item = window.localStorage.getItem(key);
       if (item !== null) {
@@ -18,17 +36,18 @@ export function useLocalStorage<T>(key: string, initialValue: T | (() => T)) {
       setStoredValue((prev) => {
         const next = typeof value === 'function' ? (value as (p: T) => T)(prev) : value;
         try {
-          window.localStorage.setItem(key, JSON.stringify(next));
+          if (persist) window.localStorage.setItem(key, JSON.stringify(next));
         } catch {
           // Storage quota exceeded or unavailable
         }
         return next;
       });
     },
-    [key]
+    [key, persist]
   );
 
   useEffect(() => {
+    if (!persist) return;
     const onStorage = (e: StorageEvent) => {
       if (e.key === key && e.newValue !== null) {
         try {
@@ -40,7 +59,7 @@ export function useLocalStorage<T>(key: string, initialValue: T | (() => T)) {
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
-  }, [key]);
+  }, [key, persist]);
 
   return [storedValue, setValue] as const;
 }

@@ -33,6 +33,7 @@ import {
 import { getTodayKey } from './utils/dateUtils';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+const MIGRATION_OWNER_KEY = 'repeatly_migration_owner_v1';
 
 function filterNotExpiredTrash(items: Task[]): Task[] {
   const cutoff = Date.now() - THIRTY_DAYS_MS;
@@ -43,13 +44,26 @@ function filterNotExpiredTrash(items: Task[]): Task[] {
 }
 
 export default function App() {
-  const [tasks, setTasks] = useLocalStorage<Task[]>('repeatly_tasks_v1', createStarterTasks);
-  const [trashTasks, setTrashTasks] = useLocalStorage<Task[]>('repeatly_trash_v1', []);
+  const [tasks, setTasks] = useLocalStorage<Task[]>(
+    'repeatly_tasks_v1',
+    createStarterTasks,
+    { persist: false }
+  );
+  const [trashTasks, setTrashTasks] = useLocalStorage<Task[]>(
+    'repeatly_trash_v1',
+    [],
+    { persist: false }
+  );
   const [recurringRules, setRecurringRules] = useLocalStorage<RecurringRule[]>(
     'repeatly_recurring_v1',
-    createStarterRecurring
+    createStarterRecurring,
+    { persist: false }
   );
-  const [tabs, setTabs] = useLocalStorage<TaskTab[]>('repeatly_tabs_v1', DEFAULT_TABS);
+  const [tabs, setTabs] = useLocalStorage<TaskTab[]>(
+    'repeatly_tabs_v1',
+    DEFAULT_TABS,
+    { persist: false }
+  );
   const [themeSettings, setThemeSettings] = useLocalStorage<ThemeSettings>(
     'lumendo_theme_v1',
     DEFAULT_THEME_SETTINGS
@@ -99,8 +113,8 @@ export default function App() {
     window.localStorage.removeItem('repeatly_trash_v1');
     window.localStorage.removeItem('repeatly_recurring_v1');
     window.localStorage.removeItem('repeatly_tabs_v1');
-    window.localStorage.removeItem('lumendo_theme_v1');
     window.localStorage.removeItem('repeatly_reminders_v1');
+    window.localStorage.removeItem(MIGRATION_OWNER_KEY);
   }, [setReminderPrefs, setRecurringRules, setTabs, setTasks, setThemeSettings, setTrashTasks]);
 
   const apiFetch = useCallback(
@@ -154,11 +168,17 @@ export default function App() {
       }
       const requestUser = user;
       try {
-        const localSnapshot = pendingLocalSnapshotRef.current;
+        const storedMigrationOwner = window.localStorage.getItem(MIGRATION_OWNER_KEY);
+        const localSnapshot =
+          pendingLocalSnapshotRef.current ??
+          (storedMigrationOwner === null || storedMigrationOwner === requestUser.uid
+            ? localSnapshotRef.current
+            : null);
         pendingLocalSnapshotRef.current = null;
         clearPrivateState();
         const data = await apiFetch('/api/bootstrap', { method: 'GET' }, user);
         if (!data) return;
+        window.localStorage.setItem(MIGRATION_OWNER_KEY, requestUser.uid);
 
         // If cloud workspace has zero tasks and zero recurring rules, migrate local items once
         const snap = localSnapshot;

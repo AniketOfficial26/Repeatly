@@ -12,6 +12,16 @@ import { recurringRules, tasks, taskTabs, users } from './schema.ts';
 
 const RETENTION_DAYS = 30;
 
+export class TabOperationError extends Error {
+  constructor(
+    message: string,
+    public readonly code: 'INVALID' | 'NOT_FOUND'
+  ) {
+    super(message);
+    this.name = 'TabOperationError';
+  }
+}
+
 async function assertTabOwnership(uid: string, tabId: string): Promise<void> {
   const [tab] = await db
     .select({ userUid: taskTabs.userUid })
@@ -426,16 +436,46 @@ export async function deleteTabInDb(
   fallbackTabId: string
 ): Promise<void> {
   try {
-    await db
-      .update(tasks)
-      .set({ tabId: fallbackTabId })
-      .where(and(eq(tasks.userUid, uid), eq(tasks.tabId, tabId)));
-    await db
-      .update(recurringRules)
-      .set({ tabId: fallbackTabId })
-      .where(and(eq(recurringRules.userUid, uid), eq(recurringRules.tabId, tabId)));
-    await db.delete(taskTabs).where(and(eq(taskTabs.id, tabId), eq(taskTabs.userUid, uid)));
+    await db.transaction(async (tx) => {
+      const [targetTab] = await tx
+        .select({ id: taskTabs.id, userUid: taskTabs.userUid })
+        .from(taskTabs)
+        .where(eq(taskTabs.id, tabId));
+
+      if (!targetTab || targetTab.userUid !== uid) {
+        throw new TabOperationError('Task tab not found.', 'NOT_FOUND');
+      }
+
+      const ownedTabs = await tx
+        .select({ id: taskTabs.id })
+        .from(taskTabs)
+        .where(eq(taskTabs.userUid, uid))
+        .orderBy(asc(taskTabs.order));
+
+      const remainingTabs = ownedTabs.filter((tab) => tab.id !== tabId);
+      if (remainingTabs.length === 0) {
+        throw new TabOperationError('Cannot delete the only task tab.', 'INVALID');
+      }
+
+      const validFallback =
+        remainingTabs.find((tab) => tab.id === fallbackTabId) ?? remainingTabs[0];
+
+      await tx
+        .update(tasks)
+        .set({ tabId: validFallback.id })
+        .where(and(eq(tasks.userUid, uid), eq(tasks.tabId, tabId)));
+      await tx
+        .update(recurringRules)
+        .set({ tabId: validFallback.id })
+        .where(and(eq(recurringRules.userUid, uid), eq(recurringRules.tabId, tabId)));
+      await tx
+        .delete(taskTabs)
+        .where(and(eq(taskTabs.id, tabId), eq(taskTabs.userUid, uid)));
+    });
   } catch (error) {
+    if (error instanceof TabOperationError) {
+      throw error;
+    }
     console.error('Delete tab failed:', error);
     throw new Error('Failed to delete tab.', { cause: error });
   }
