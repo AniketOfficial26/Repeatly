@@ -62,7 +62,7 @@ async function startServer() {
       "object-src 'none'",
       "frame-ancestors 'none'",
       "form-action 'self'",
-      `script-src ${scriptSources} https://*.googleapis.com`,
+      `script-src ${scriptSources} https://apis.google.com https://*.googleapis.com`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://*.googleusercontent.com https://*.gstatic.com",
